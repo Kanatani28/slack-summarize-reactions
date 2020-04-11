@@ -10,7 +10,10 @@ config.ymlとusers.csvに設定をしてから実行ファイルを叩くと
 Slackのメッセージに付与されたリアクションを集計できます。
 
 ## Slackの設定
-
+1. [ここ](https://api.slack.com/apps)にアクセスし、Create an Appボタンをクリックする。
+2. 任意のApp Nameを入力、対象のworkspaceを選択し、Create Appボタンをクリックする。
+![スクリーンショット 2020-04-12 3 20 30](https://user-images.githubusercontent.com/16130443/79051724-c9130300-7c6c-11ea-8a6b-4cb3cc24c527.png)
+3. 
 
 ## config.yml
 

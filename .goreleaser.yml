@@ -6,7 +6,7 @@ before:
     - go mod tidy
 builds:
   - main: .
-    binary: usergen
+    binary: sum_reactions
     goos:
       - windows
       - darwin

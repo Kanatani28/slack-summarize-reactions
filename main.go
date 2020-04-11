@@ -1,57 +1,29 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"strconv"
-	"strings"
 
-	"gopkg.in/yaml.v2"
+	"slack-summarize-reactions/api"
+	"slack-summarize-reactions/structs"
+	"slack-summarize-reactions/utils"
 )
 
-const SLACK_URL = "https://slack.com/api/"
-const USER_LIST_API_URL = SLACK_URL + "users.list"
-const CHANNEL_LIST_API_URL = SLACK_URL + "channels.list"
-const CHANNEL_HISTORY_API_URL = SLACK_URL + "channels.history"
-
-type Reaction struct {
-	Name  string   `json:"name"`
-	Users []string `json:"users"`
-	Count int      `json:"count"`
-}
-
-const CONFIG_FILE = "./config.yml"
-const USER_DATA_CSV = "./users.csv"
-
-type Conf struct {
-	Token         string `yaml:"token"`
-	TargetChannel string `yaml:"target_channel"`
-	SearchCount   int    `yaml:"search_count"`
-}
-
-var conf Conf
+var conf utils.Conf
 var userCsvData []string
-var users []User
+var users []structs.User
 
 func init() {
-	log.Println("START init()")
-	c, err := ioutil.ReadFile(CONFIG_FILE)
-	if err != nil {
-		log.Fatal(err)
-	}
-	yaml.Unmarshal([]byte(c), &conf)
-	log.Println("# Token: " + conf.Token)
-	log.Println("# Target Channel: " + conf.TargetChannel)
+	log.Println("# START init()")
 
-	userCsvData = readUserData()
-	log.Println("# User CSV Data Count:" + strconv.Itoa(len(userCsvData)))
+	conf = utils.LoadConfig()
+	userCsvData = utils.ReadUserCSV()
+	log.Println("## User CSV Data Count: " + strconv.Itoa(len(userCsvData)))
 
-	users = getUsers()
+	users = api.GetUsers(conf.Token)
 
-	log.Println("END init()")
+	log.Println("# END init()")
 }
 
 func main() {
@@ -60,7 +32,7 @@ func main() {
 
 	targetChannel := getTargetChannel()
 
-	messages := getChannelMsgs(targetChannel.ID)
+	messages := api.GetChannelMsgs(targetChannel.ID, conf.Token)
 	for _, message := range messages[0:conf.SearchCount] {
 		fmt.Println("============================================================")
 		fmt.Println("== Message: " + message.Text)
@@ -71,7 +43,7 @@ func main() {
 	log.Println("# END main()")
 }
 
-func showNoReactionUsers(message ChannelMessage) {
+func showNoReactionUsers(message structs.ChannelMessage) {
 	var reactionUserNames []string
 
 	for _, reaction := range message.Reactions {
@@ -110,131 +82,15 @@ func showNoReactionUsers(message ChannelMessage) {
 	}
 }
 
-// UsersJSON users.listで取得できるJSON
-type UsersJSON struct {
-	Ok      bool   `json: "ok"`
-	Members []User `json: "members"`
-}
+func getTargetChannel() structs.Channel {
+	channels := api.GetChannels(conf.Token)
 
-// User users.listで取得できるJSONのmembersフィールドの要素
-type User struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	RealName string `json:"real_name"`
-}
-
-func getUsers() []User {
-	log.Println("## START getUsers()")
-
-	resp, err := http.Get(USER_LIST_API_URL + "?token=" + conf.Token)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	bytes, _ := ioutil.ReadAll(resp.Body)
-
-	var usersJSON UsersJSON
-	if err := json.Unmarshal(bytes, &usersJSON); err != nil {
-		log.Fatal(err)
-	}
-	if !usersJSON.Ok {
-		log.Fatal("### users.list FAILED")
-	}
-
-	log.Println("## END getUsers()")
-	return usersJSON.Members
-}
-
-// ChannelsJSON channels.listで取得できるJSON
-type ChannelsJSON struct {
-	Ok       bool      `json:"ok"`
-	Channels []Channel `json:"channels"`
-}
-
-// Channel channels.listで取得できるJSONのchannelsフィールドの要素
-type Channel struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
-func getTargetChannel() Channel {
-	channels := getChannels()
-	var targetChannel Channel
 	for _, channel := range channels {
 		if channel.Name == conf.TargetChannel {
-			targetChannel = channel
+			return channel
 		}
 	}
-	return targetChannel
-}
-
-func getChannels() []Channel {
-	log.Println("## START getChannels()")
-
-	resp, err := http.Get(CHANNEL_LIST_API_URL + "?token=" + conf.Token)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	bytes, _ := ioutil.ReadAll(resp.Body)
-
-	var channelsJSON ChannelsJSON
-	if err := json.Unmarshal(bytes, &channelsJSON); err != nil {
-		log.Fatal(err)
-	}
-	if !channelsJSON.Ok {
-		log.Println(channelsJSON)
-		log.Fatal("### channel.list FAILED")
-	}
-
-	log.Println("## END getChannels()")
-	return channelsJSON.Channels
-}
-
-type ChannelMsgsJSON struct {
-	Ok       bool             `json:"ok"`
-	Messages []ChannelMessage `json:"messages"`
-}
-
-type ChannelMessage struct {
-	Text      string     `json:"text"`
-	User      string     `json:"user"`
-	Reactions []Reaction `json:"reactions"`
-}
-
-func getChannelMsgs(channelID string) []ChannelMessage {
-	log.Println("## START getChannelMsgs()")
-
-	resp, err := http.Get(CHANNEL_HISTORY_API_URL + "?token=" + conf.Token + "&channel=" + channelID)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-	bytes, _ := ioutil.ReadAll(resp.Body)
-
-	var channelMsgsJSON ChannelMsgsJSON
-	if err := json.Unmarshal(bytes, &channelMsgsJSON); err != nil {
-		log.Fatal(err)
-	}
-	if !channelMsgsJSON.Ok {
-		log.Fatal("### channel.history FAILED")
-	}
-
-	return channelMsgsJSON.Messages
-}
-
-func readUserData() []string {
-
-	log.Println("## START readUserData()")
-
-	fileData, err := ioutil.ReadFile(USER_DATA_CSV)
-	if err != nil {
-		log.Fatal(err)
-	}
-	lines := strings.Split(string(fileData), "\n")
-
-	log.Println("## END readUserData()")
-	return lines
+	var noChannel structs.Channel
+	log.Fatal("Channel not found: " + conf.TargetChannel)
+	return noChannel
 }

@@ -13,7 +13,11 @@ Slackのメッセージに付与されたリアクションを集計できます
 1. [ここ](https://api.slack.com/apps)にアクセスし、Create an Appボタンをクリックする。
 2. 任意のApp Nameを入力、対象のworkspaceを選択し、Create Appボタンをクリックする。
 ![スクリーンショット 2020-04-12 3 20 30](https://user-images.githubusercontent.com/16130443/79051724-c9130300-7c6c-11ea-8a6b-4cb3cc24c527.png)
-3. 
+3. OAuth & PermissionsページでTokenを作成する。
+![キャプチャ](https://user-images.githubusercontent.com/16130443/79060170-b32d2e80-7cbc-11ea-8be9-2e0878194a7a.PNG)
+4. User Token Scopesを以下のように設定する。
+![キャプチャ2](https://user-images.githubusercontent.com/16130443/79060172-b6281f00-7cbc-11ea-91ef-b7495d66d79c.PNG)
+5. 適宜ReInstall Appする
 
 ## config.yml
 
@@ -26,4 +30,4 @@ Slackのメッセージに付与されたリアクションを集計できます
 ## users.csv
 
 Slackのユーザー名。
-[こんな感じ](https://github.com/Kanatani28/slack-summarize-reactions/blob/master/users.csv)で設定する。
+[こんな感じ](https://github.com/Kanatani28/slack-summarize-reactions/blob/master/users.csv)で一行一人設定する。

@@ -30,4 +30,5 @@ Slackのメッセージに付与されたリアクションを集計できます
 ## users.csv
 
 Slackのユーザー名。
-[こんな感じ](https://github.com/Kanatani28/slack-summarize-reactions/blob/master/users.csv)で一行一人設定する。
+[こんな感じ](https://github.com/Kanatani28/slack-summarize-reactions/blob/master/users.csv)で一行一人設定する。    
+**人によってはスペースある人とかない人とかいるので注意**
